@@ -1,0 +1,553 @@
+import random
+import math
+import matplotlib.pyplot as plt
+
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
+def sigmoid_derivative(x):
+    return sigmoid(x) * (1 - sigmoid(x))
+
+def relu(x):
+    return max(0, x)
+
+def relu_derivative(x):
+    return 1 if x > 0 else 0
+
+def linear(x):
+    return x
+
+def linear_derivative(x):
+    return 1
+
+def tanh(x):
+    return math.tanh(x)
+
+def tanh_derivative(x):
+    return 1 - math.tanh(x)**2
+
+class Perceptron:
+    def __init__(self, input_size, output_size, learning_rate=0.01, activation_function='sigmoid'):
+        self.weights = [[random.uniform(-1, 1) for _ in range(input_size + 1)] for _ in range(output_size)]
+        self.learning_rate = learning_rate
+
+        # Choosing activation function
+        if activation_function == 'sigmoid':
+            self.activation = sigmoid
+            self.activation_derivative = sigmoid_derivative
+        elif activation_function == 'relu':
+            self.activation = relu
+            self.activation_derivative = relu_derivative
+        elif activation_function == 'linear':
+            self.activation = linear
+            self.activation_derivative = linear_derivative
+        elif activation_function == 'tanh':
+            self.activation = tanh
+            self.activation_derivative = tanh_derivative
+
+    def feedforward(self, inputs):
+        self.inputs = inputs + [1]
+        self.outputs = []
+        for j in range(len(self.weights)):
+            activation = 0
+            for i in range(len(self.inputs)):
+                activation += self.weights[j][i] * self.inputs[i]
+            self.outputs.append(self.activation(activation))
+        return self.outputs
+
+    def backpropagation(self, target_output):
+        target_vector = [0] * len(self.outputs)
+        target_vector[target_output] = 1
+        for j in range(len(self.weights)):
+            error = target_vector[j] - self.outputs[j]
+            delta = error * self.activation_derivative(self.outputs[j])
+            for i in range(len(self.inputs)):
+                self.weights[j][i] += self.learning_rate * delta * self.inputs[i]
+
+    def calculate_loss(self, inputs, target_output):
+        output = self.feedforward(inputs)
+        target_vector = [0] * len(output)
+        target_vector[target_output] = 1
+        loss = sum((target_vector[j] - output[j]) ** 2 for j in range(len(output))) / len(output)
+        return loss
+
+
+dataset = {
+    "0": [1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "1": [0, 0, 1, 0,
+           0, 1, 1, 0,
+           0, 0, 1, 0,
+           0, 0, 1, 0,
+           0, 0, 1, 0],
+
+    "2": [1, 1, 1, 1,
+           0, 0, 0, 1,
+           1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 1],
+
+    "3": [1, 1, 1, 1,
+           0, 0, 1, 0,
+           0, 1, 0, 0,
+           0, 0, 1, 0,
+           1, 1, 1, 1],
+
+    "4": [1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1,
+           0, 0, 0, 1,
+           0, 0, 0, 1],
+
+    "5": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 1,
+           0, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "6": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "7": [1, 1, 1, 1,
+           0, 0, 0, 1,
+           0, 0, 0, 1,
+           0, 0, 0, 1,
+           0, 0, 0, 1],
+
+    "8": [1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "9": [1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1,
+           0, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "A": [1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1,
+           1, 0, 0, 1],
+
+    "B": [1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 0,
+           1, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "C": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 0, 0, 0,
+           1, 0, 0, 0,
+           1, 1, 1, 1],
+
+    "D": [1, 1, 1, 0,
+           1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 0],
+
+    "E": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 1],
+
+    "F": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 1, 1, 0,
+           1, 0, 0, 0,
+           1, 0, 0, 0],
+
+    "G": [1, 1, 1, 1,
+           1, 0, 0, 0,
+           1, 0, 1, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1],
+
+    "H": [1, 0, 0, 1,
+           1, 0, 0, 1,
+           1, 1, 1, 1,
+           1, 0, 0, 1,
+           1, 0, 0, 1],
+
+    "I": [1, 1, 1, 1,
+           0, 1, 1, 0,
+           0, 1, 1, 0,
+           0, 1, 1, 0,
+           1, 1, 1, 1],
+
+    "J": [1, 1, 1, 1,
+           0, 1, 1, 0,
+           0, 1, 1, 0,
+           0, 1, 1, 0,
+           1, 1, 1, 0],
+
+}
+
+dataset2 = {
+    "0": [1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "1": [0.5, 0.5, 1, 0.5,
+          0.5, 1, 1, 0.5,
+          0.5, 0.5, 1, 0.5,
+          0.5, 0.5, 1, 0.5,
+          0.5, 0.5, 1, 0.5],
+
+    "2": [1, 1, 1, 1,
+          0.5, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1],
+
+    "3": [1, 1, 1, 1,
+          0.5, 0.5, 1, 0.5,
+          0.5, 1, 0.5, 0.5,
+          0.5, 0.5, 1, 0.5,
+          1, 1, 1, 1],
+
+    "4": [1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          0.5, 0.5, 0.5, 1,
+          0.5, 0.5, 0.5, 1],
+
+    "5": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1,
+          0.5, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "6": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "7": [1, 1, 1, 1,
+          0.5, 0.5, 0.5, 1,
+          0.5, 0.5, 0.5, 1,
+          0.5, 0.5, 0.5, 1,
+          0.5, 0.5, 0.5, 1],
+
+    "8": [1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "9": [1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          0.5, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "A": [1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 1],
+
+    "B": [1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 0.5,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "C": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 0.5, 0.5, 0.5,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1],
+
+    "D": [1, 1, 1, 0.5,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 0.5],
+
+    "E": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 1],
+
+    "F": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 1, 1, 0.5,
+          1, 0.5, 0.5, 0.5,
+          1, 0.5, 0.5, 0.5],
+
+    "G": [1, 1, 1, 1,
+          1, 0.5, 0.5, 0.5,
+          1, 0.5, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1],
+
+    "H": [1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1,
+          1, 1, 1, 1,
+          1, 0.5, 0.5, 1,
+          1, 0.5, 0.5, 1],
+
+    "I": [1, 1, 1, 1,
+          0.5, 1, 1, 0.5,
+          0.5, 1, 1, 0.5,
+          0.5, 1, 1, 0.5,
+          1, 1, 1, 1],
+
+    "J": [1, 1, 1, 1,
+          0.5, 1, 1, 0.5,
+          0.5, 1, 1, 0.5,
+          0.5, 1, 1, 0.5,
+          1, 1, 1, 0.5]
+}
+
+dataset3 = {
+    "0": [1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "1": [0.25, 0.25, 1, 0.25,
+          0.25, 1, 1, 0.25,
+          0.25, 0.25, 1, 0.25,
+          0.25, 0.25, 1, 0.25,
+          0.25, 0.25, 1, 0.25],
+
+    "2": [1, 1, 1, 1,
+          0.25, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1],
+
+    "3": [1, 1, 1, 1,
+          0.25, 0.25, 1, 0.25,
+          0.25, 1, 0.25, 0.25,
+          0.25, 0.25, 1, 0.25,
+          1, 1, 1, 1],
+
+    "4": [1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          0.25, 0.25, 0.25, 1,
+          0.25, 0.25, 0.25, 1],
+
+    "5": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1,
+          0.25, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "6": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "7": [1, 1, 1, 1,
+          0.25, 0.25, 0.25, 1,
+          0.25, 0.25, 0.25, 1,
+          0.25, 0.25, 0.25, 1,
+          0.25, 0.25, 0.25, 1],
+
+    "8": [1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "9": [1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          0.25, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "A": [1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 1],
+
+    "B": [1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 0.25,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "C": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 0.25, 0.25, 0.25,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1],
+
+    "D": [1, 1, 1, 0.25,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 0.25],
+
+    "E": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 1],
+
+    "F": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 1, 1, 0.25,
+          1, 0.25, 0.25, 0.25,
+          1, 0.25, 0.25, 0.25],
+
+    "G": [1, 1, 1, 1,
+          1, 0.25, 0.25, 0.25,
+          1, 0.25, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1],
+
+    "H": [1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1,
+          1, 1, 1, 1,
+          1, 0.25, 0.25, 1,
+          1, 0.25, 0.25, 1],
+
+    "I": [1, 1, 1, 1,
+          0.25, 1, 1, 0.25,
+          0.25, 1, 1, 0.25,
+          0.25, 1, 1, 0.25,
+          1, 1, 1, 1],
+
+    "J": [1, 1, 1, 1,
+          0.25, 1, 1, 0.25,
+          0.25, 1, 1, 0.25,
+          0.25, 1, 1, 0.25,
+          1, 1, 1, 0.25]
+}
+
+
+targets = {
+    '0': 0,
+    '1': 1,
+    '2': 2,
+    '3': 3,
+    '4': 4,
+    '5': 5,
+    '6': 6,
+    '7': 7,
+    '8': 8,
+    '9': 9,
+    'A': 10,
+    'B': 11,
+    'C': 12,
+    'D': 13,
+    'E': 14,
+    'F': 15,
+    'G': 16,
+    'H': 17,
+    'I': 18,
+    'J': 19
+}
+
+def train_perceptron(activation_function, epochs=200, learning_rate=0.001):
+    perceptron = Perceptron(input_size=20, output_size=20, learning_rate=learning_rate, activation_function=activation_function)
+    losses = []
+    for epoch in range(epochs):
+        epoch_loss = 0
+        for digit, inputs in dataset.items():
+            target = targets[digit]
+            perceptron.feedforward(inputs)
+            perceptron.backpropagation(target)
+            epoch_loss += perceptron.calculate_loss(inputs, target)
+        for digit, inputs in dataset2.items():
+            target = targets[digit]
+            perceptron.feedforward(inputs)
+            perceptron.backpropagation(target)
+            epoch_loss += perceptron.calculate_loss(inputs, target)
+        losses.append(epoch_loss / (len(dataset) + len(dataset2)))
+    return losses, perceptron
+
+def trained_perceptron(perceptron, epochs=100):
+    losses = []
+    for epoch in range(epochs):
+        epoch_loss = 0
+        for digit, inputs in dataset3.items():
+            target = targets[digit]
+            perceptron.feedforward(inputs)
+            perceptron.backpropagation(target)
+            epoch_loss += perceptron.calculate_loss(inputs, target)
+        losses.append(epoch_loss / (len(dataset3)))
+    return losses
+
+def plot_losses():
+    epochs = 200
+
+    # Обучаем персептрон с каждой функцией активации и собираем результаты
+    loss_linear, perceptron_linear = train_perceptron('linear', epochs=epochs)
+    loss_tanh, perceptron_tanh = train_perceptron('tanh', epochs=epochs)
+    loss_relu, perceptron_relu = train_perceptron('relu', epochs=epochs)
+    loss_sigmoid, perceptron_sigmoid = train_perceptron('sigmoid', epochs=epochs)
+
+    # Тренируем уже обученные персептроны на датасетах
+    loss_linear_test = trained_perceptron(perceptron_linear, epochs=epochs)
+    loss_tanh_test = trained_perceptron(perceptron_tanh, epochs=epochs)
+    loss_sigmoid_test = trained_perceptron(perceptron_sigmoid, epochs=epochs)
+    loss_relu_test = trained_perceptron(perceptron_relu, epochs=epochs)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(epochs), loss_sigmoid, label="Sigmoid")
+    plt.plot(range(epochs), loss_sigmoid_test, label="Sigmoid (Test)")
+    plt.title('График зависимости функции потерь от числа эпох для Sigmoid')
+    plt.xlabel('Число эпох')
+    plt.ylabel('Функция потерь (MSE)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(epochs), loss_relu, label="ReLU")
+    plt.plot(range(epochs), loss_relu_test, label="ReLU (Test)")
+    plt.title('График зависимости функции потерь от числа эпох для ReLU')
+    plt.xlabel('Число эпох')
+    plt.ylabel('Функция потерь (MSE)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(epochs), loss_linear, label="Linear")
+    plt.plot(range(epochs), loss_linear_test, label="Linear (Test)")
+    plt.title('График зависимости функции потерь от числа эпох для Linear')
+    plt.xlabel('Число эпох')
+    plt.ylabel('Функция потерь (MSE)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(epochs), loss_tanh, label="Tanh")
+    plt.plot(range(epochs), loss_tanh_test, label="Tanh (Test)")
+    plt.title('График зависимости функции потерь от числа эпох для Tanh')
+    plt.xlabel('Число эпох')
+    plt.ylabel('Функция потерь (MSE)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    print(min(loss_sigmoid_test), min(loss_relu_test), min(loss_linear_test), min(loss_tanh_test))
+plot_losses()
+
