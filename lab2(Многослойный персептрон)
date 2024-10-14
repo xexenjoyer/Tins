@@ -1,0 +1,161 @@
+import random
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import torchvision
+
+# Активационные функции и их производные
+def relu(x): return 1 / (1 + np.exp(-x))
+
+def relu_derivative(x): return relu(x) * (1 - relu(x))
+
+def softmax(x):
+    exp_values = np.exp(x - np.max(x))
+    return exp_values / np.sum(exp_values, axis=-1, keepdims=True)
+
+# Функции потерь и их производные
+def mean_squared_error(outputs, target_vector):
+    return np.mean((target_vector - outputs) ** 2)
+
+def mean_squared_error_derivative(outputs, target_vector):
+    return -(target_vector - outputs)
+
+def categorical_cross_entropy(outputs, target_vector):
+    return -np.sum(target_vector * np.log(outputs + 1e-10))/10
+
+def categorical_cross_entropy_derivative(outputs, target_vector):
+    return (outputs - target_vector)/10
+
+def kl_divergence(y_true, y_pred):
+    y_true = np.clip(y_true, 1e-10, 1)
+    y_pred = np.clip(y_pred, 1e-10, 1)
+    return np.sum(y_true * np.log(y_true / y_pred))
+
+def kl_divergence_derivative(y_true, y_pred):
+    y_pred = np.clip(y_pred, 1e-10, 1)
+    return - y_true / y_pred
+
+# Класс перцептрона
+class Perceptron:
+    def __init__(self, input_size, hidden_layers, output_size, learning_rate=0.009, loss_function='mse'):
+        self.learning_rate = learning_rate
+
+        # Инициализация весов для 3 скрытых слоев и выходного слоя
+        self.weights1 = np.random.randn(input_size + 1, hidden_layers[0])   # +1 для смещения
+        self.weights2 = np.random.randn(hidden_layers[0] + 1, hidden_layers[1])
+        self.weights3 = np.random.randn(hidden_layers[1] + 1, hidden_layers[2])
+        self.weights_out = np.random.randn(hidden_layers[2] + 1, output_size)
+
+        # Установка функции потерь
+        if loss_function == 'mse':
+            self.loss_function = mean_squared_error
+            self.loss_derivative = mean_squared_error_derivative
+        elif loss_function == 'categorical_cross_entropy':
+            self.loss_function = categorical_cross_entropy
+            self.loss_derivative = categorical_cross_entropy_derivative
+        else:
+            self.loss_function = kl_divergence
+            self.loss_derivative = kl_divergence_derivative
+
+    # Прямое распространение
+    def feedforward(self, inputs):
+        self.inputs = np.append(inputs, 1)  # Добавляем смещение
+
+        # Скрытый слой 1
+        self.z1 = np.dot(self.inputs, self.weights1)
+        self.a1 = relu(self.z1)
+
+        # Скрытый слой 2
+        self.a1 = np.append(self.a1, 1)  # Добавляем смещение
+        self.z2 = np.dot(self.a1, self.weights2)
+        self.a2 = relu(self.z2)
+
+        # Скрытый слой 3
+        self.a2 = np.append(self.a2, 1)  # Добавляем смещение
+        self.z3 = np.dot(self.a2, self.weights3)
+        self.a3 = relu(self.z3)
+
+        # Выходной слой
+        self.a3 = np.append(self.a3, 1)  # Добавляем смещение
+        self.outputs = softmax(np.dot(self.a3, self.weights_out))
+
+        return self.outputs
+
+    # Обратное распространение
+    def backpropagation(self, target_output):
+        # Вычисление производной функции потерь по выходу
+        loss_deriv = self.loss_derivative(self.outputs, target_output)
+
+        # Обновление весов выходного слоя
+        delta_out = loss_deriv
+        grad_out = np.outer(self.a3, delta_out)
+        self.weights_out -= self.learning_rate * grad_out
+
+        # Обновление весов третьего скрытого слоя
+        delta3 = np.dot(delta_out, self.weights_out[:-1].T) * relu_derivative(self.z3)
+        grad3 = np.outer(self.a2, delta3)
+        self.weights3 -= self.learning_rate * grad3
+
+        # Обновление весов второго скрытого слоя
+        delta2 = np.dot(delta3, self.weights3[:-1].T) * relu_derivative(self.z2)
+        grad2 = np.outer(self.a1, delta2)
+        self.weights2 -= self.learning_rate * grad2
+
+        # Обновление весов первого скрытого слоя
+        delta1 = np.dot(delta2, self.weights2[:-1].T) * relu_derivative(self.z1)
+        grad1 = np.outer(self.inputs, delta1)
+        self.weights1 -= self.learning_rate * grad1
+
+    # Вычисление потерь
+    def calculate_loss(self, inputs, target_output):
+        output = self.feedforward(inputs)
+        loss = self.loss_function(output, target_output)
+        return loss
+
+# Обучение перцептрона
+def train_perceptron(loss_function, epochs, x_train, y_train):
+    perceptron = Perceptron(input_size=28 * 28, hidden_layers=[64, 32, 16], output_size=10, loss_function=loss_function)
+    losses = []
+    accuracies = []
+
+    for epoch in range(epochs):
+        epoch_loss = 0
+        correct_predictions = 0  # Счётчик правильных предсказаний
+
+        for digit in range(len(y_train)):
+            target = y_train[digit]
+            output = perceptron.feedforward(x_train[digit])
+
+            # Обновляем модель с помощью обратного распространения ошибки
+            perceptron.backpropagation(target)
+
+            # Вычисляем ошибку для данного примера
+            epoch_loss += perceptron.calculate_loss(x_train[digit], target)
+
+            # Проверяем правильность предсказания
+            if np.argmax(output) == np.argmax(target):
+                correct_predictions += 1
+
+
+        # Вычисление средней ошибки за эпоху
+        losses.append(epoch_loss / len(y_train))
+
+        # Вычисление точности за эпоху
+        accuracy = correct_predictions / len(y_train)
+        accuracies.append(accuracy)
+
+        print(f'Epoch {epoch + 1}/{epochs}, Loss: {losses[-1]:.4f}, Accuracy: {accuracy:.4f}')
+
+    return losses, accuracies, perceptron
+
+if __name__ == "__main__":
+    MNIST_train = torchvision.datasets.MNIST('./', download=True, train=True)
+    count = 400
+    train_X = MNIST_train.data.numpy()[:count]
+    train_Y = MNIST_train.targets.numpy()[:count]
+
+    train_X = np.array(list(map(lambda x: x.flatten() / 256, train_X)))
+    train_Y = np.array([np.array([int(i == x) for i in range(10)]) for x in train_Y])
+
+    losses, perceptron = train_perceptron("kl", 100, train_X, train_Y)
+    print(losses)
